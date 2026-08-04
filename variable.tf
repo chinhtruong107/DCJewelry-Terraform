@@ -50,8 +50,15 @@ variable "control_node_cidr" {
 }
 
 variable "db_name" {
-  type    = string
-  default = "dcjewelry"
+  type        = string
+  description = "Name of the database to create in RDS."
+  nullable    = false
+}
+
+variable "db_identifier" {
+  type        = string
+  description = "Unique identifier for the RDS instance."
+  default     = "dcjewelry-database"
 }
 
 variable "db_username" {

@@ -41,6 +41,7 @@ module "database" {
   source                     = "./modules/database"
   subnet_ids                 = [module.networking.private_subnet_ids[1], module.networking.private_subnet_ids[2]]
   database_security_group_id = module.security.database_security_group_id
+  db_identifier              = var.db_identifier
   db_name                    = var.db_name
   db_username                = var.db_username
   db_password                = var.db_password

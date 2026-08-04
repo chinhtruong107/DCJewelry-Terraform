@@ -4,7 +4,7 @@ resource "aws_db_subnet_group" "database" {
 }
 
 resource "aws_db_instance" "database" {
-  identifier             = "dcjewelry-database"
+  identifier             = var.db_identifier
   engine                 = "mysql"
   engine_version         = var.db_engine_version
   instance_class         = var.db_instance_class

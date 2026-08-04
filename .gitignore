@@ -10,6 +10,7 @@ crash.*.log
 *.tfvars.json
 !terraform.tfvars.example
 backend.hcl
+*.tfbackend
 
 # Sensitive local files
 .env
@@ -28,6 +29,10 @@ override.tf.json
 *.tfplan
 *.plan
 *.log
+
+# Terraform CLI credentials
+terraform.rc
+credentials.tfrc.json
 
 # Editor and OS files
 .vscode/
