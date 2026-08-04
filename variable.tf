@@ -32,7 +32,7 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 variable "amis" {
-  type = map(any)
+  type = map(string)
   default = {
     "ap-southeast-1" : "ami-0532913178263be11"
     "ap-northeast-1" : "ami-0126975fb247bf2e7"
@@ -41,6 +41,12 @@ variable "amis" {
 variable "keypair_path" {
   type    = string
   default = "./keypair/udemy-key.pub"
+}
+
+variable "control_node_cidr" {
+  type        = string
+  description = "Public IPv4 CIDR allowed to SSH to the Control Node, for example 203.0.113.10/32."
+  nullable    = false
 }
 
 variable "db_name" {
@@ -56,4 +62,34 @@ variable "db_username" {
 variable "db_password" {
   type      = string
   sensitive = true
+}
+
+variable "db_engine_version" {
+  type        = string
+  description = "MySQL engine version for RDS."
+  default     = "8.0"
+}
+
+variable "db_instance_class" {
+  type        = string
+  description = "RDS instance class, for example db.t3.micro."
+  default     = "db.t3.micro"
+}
+
+variable "db_allocated_storage" {
+  type        = number
+  description = "Allocated RDS storage in GiB."
+  default     = 20
+}
+
+variable "db_storage_type" {
+  type        = string
+  description = "RDS storage type."
+  default     = "gp3"
+}
+
+variable "db_multi_az" {
+  type        = bool
+  description = "Enable RDS Multi-AZ deployment."
+  default     = false
 }

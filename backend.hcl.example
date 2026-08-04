@@ -1,0 +1,7 @@
+# Copy this file to backend.hcl and replace the placeholder values.
+# backend.hcl is intentionally ignored by Git.
+bucket       = "replace-with-your-terraform-state-bucket"
+key          = "dcjewelry/production/terraform.tfstate"
+region       = "ap-southeast-1"
+encrypt      = true
+use_lockfile = true

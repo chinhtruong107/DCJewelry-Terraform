@@ -9,6 +9,7 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 !terraform.tfvars.example
+backend.hcl
 
 # Sensitive local files
 .env

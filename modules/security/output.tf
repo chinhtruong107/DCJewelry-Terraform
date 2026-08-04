@@ -4,3 +4,11 @@ output "public_security_group_id" {
 output "private_security_group_id" {
   value = aws_security_group.private_security_group.id
 }
+
+output "control_security_group_id" {
+  value = aws_security_group.control_security_group.id
+}
+
+output "database_security_group_id" {
+  value = aws_security_group.database_security_group.id
+}

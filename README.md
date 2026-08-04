@@ -57,12 +57,33 @@ $env:TF_VAR_db_username = "admin"
 $env:TF_VAR_db_password = "replace-with-a-strong-password"
 ```
 
+Create your local configuration from the included template:
+
+```powershell
+Copy-Item terraform.tfvars.example terraform.tfvars
+```
+
+Set `control_node_cidr` to your own public IP with a `/32` suffix. SSH is allowed only to the Control Node; the backend accepts SSH only from that node.
+
+```powershell
+$env:TF_VAR_control_node_cidr = "203.0.113.10/32"
+```
+
+Configure the remote state backend before initializing Terraform:
+
+```powershell
+Copy-Item backend.hcl.example backend.hcl
+# Edit backend.hcl with the name of an existing private S3 bucket.
+```
+
 Review `terraform.tfvars` before deployment, especially the AWS region, Availability Zones, AMI ID and instance type.
+
+RDS sizing and storage settings are also editable in `terraform.tfvars` through `db_instance_class`, `db_allocated_storage`, `db_storage_type`, `db_engine_version`, and `db_multi_az`.
 
 ## Deploy
 
 ```powershell
-terraform init
+terraform init -backend-config=backend.hcl
 terraform fmt -recursive
 terraform validate
 terraform plan
@@ -90,6 +111,6 @@ The RDS instance is private and should be accessed by the backend through its en
 ## Security notes
 
 - Keep `keypair/key` and all database passwords private.
-- SSH is currently open to `0.0.0.0/0` in the public security group. Restrict port 22 to your own IP before production deployment.
-- RDS port 3306 is restricted to the private security group.
+- SSH is permitted only from `control_node_cidr` to the Control Node, then from the Control Node to private instances.
+- RDS port 3306 is restricted to the backend private security group.
 - Use a remote encrypted Terraform backend and state locking for team or production environments.

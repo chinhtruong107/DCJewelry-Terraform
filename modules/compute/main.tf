@@ -20,7 +20,23 @@ resource "aws_instance" "Backend-instance" {
   }
 }
 
+resource "aws_instance" "Control-node" {
+  ami                    = var.image_id
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  vpc_security_group_ids = var.security_group_control
+  subnet_id              = var.subnet_id_control
+  tags = {
+    Name = "Control Node"
+  }
+}
+
 resource "aws_eip" "demo-eip" {
   domain   = "vpc"
   instance = aws_instance.Frontend-instance.id
+}
+
+resource "aws_eip" "control-node-eip" {
+  domain   = "vpc"
+  instance = aws_instance.Control-node.id
 }

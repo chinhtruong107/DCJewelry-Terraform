@@ -19,3 +19,23 @@ variable "db_password" {
   type      = string
   sensitive = true
 }
+
+variable "db_engine_version" {
+  type = string
+}
+
+variable "db_instance_class" {
+  type = string
+}
+
+variable "db_allocated_storage" {
+  type = number
+}
+
+variable "db_storage_type" {
+  type = string
+}
+
+variable "db_multi_az" {
+  type = bool
+}

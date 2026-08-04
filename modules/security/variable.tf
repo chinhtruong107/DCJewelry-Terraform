@@ -8,3 +8,9 @@ variable "vpc_id" {
   nullable    = false
 
 }
+
+variable "control_node_cidr" {
+  type        = string
+  description = "Public IPv4 CIDR allowed to SSH to the Control Node."
+  nullable    = false
+}

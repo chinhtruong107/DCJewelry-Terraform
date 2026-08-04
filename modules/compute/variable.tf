@@ -30,12 +30,23 @@ variable "subnet_id_backend" {
   nullable    = false
 }
 
+variable "subnet_id_control" {
+  type        = string
+  description = "The Control Node subnet ID to launch in"
+  nullable    = false
+}
+
 variable "security_group_public" {
   type     = list(string)
   nullable = false
 }
 
 variable "security_group_private" {
+  type     = list(string)
+  nullable = false
+}
+
+variable "security_group_control" {
   type     = list(string)
   nullable = false
 }
