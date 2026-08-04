@@ -5,13 +5,16 @@ Terraform configuration for deploying the DCJewelry application infrastructure o
 ## Architecture
 
 ```text
-Internet
+Administrator IP
    |
-Frontend EC2 (public subnet)
-   |
-Backend EC2 (private subnet)
-   |
-RDS MySQL (private subnet)
+Control Node EC2 + EIP (public subnet)
+   | SSH
+   +--------------------+
+   |                    |
+Frontend EC2       Backend EC2 (private subnet)
+(public subnet)             |
+                             |
+                    RDS MySQL (private subnet)
 ```
 
 The configuration creates:
@@ -22,6 +25,7 @@ The configuration creates:
 - Public and private security groups
 - A frontend EC2 instance with an Elastic IP
 - A backend EC2 instance in a private subnet
+- A Control Node EC2 with an Elastic IP for SSH/Ansible access
 - A private MySQL RDS instance
 - An EC2 key pair from `keypair/key.pub`
 

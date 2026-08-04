@@ -40,7 +40,7 @@ variable "amis" {
 }
 variable "keypair_path" {
   type    = string
-  default = "./keypair/udemy-key.pub"
+  default = "./keypair/key.pub"
 }
 
 variable "control_node_cidr" {

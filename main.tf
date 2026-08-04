@@ -19,15 +19,15 @@ module "security" {
   control_node_cidr = var.control_node_cidr
 }
 
-resource "aws_key_pair" "udemy-keypair" {
-  key_name   = "udemy-keypair"
+resource "aws_key_pair" "dcjewelry_keypair" {
+  key_name   = "dcjewelry-keypair"
   public_key = file(var.keypair_path)
 }
 module "compute" {
   source                 = "./modules/compute"
   region                 = var.region
   image_id               = var.amis[var.region]
-  key_name               = aws_key_pair.udemy-keypair.key_name
+  key_name               = aws_key_pair.dcjewelry_keypair.key_name
   instance_type          = var.instance_type
   security_group_public  = [module.security.public_security_group_id]
   security_group_private = [module.security.private_security_group_id]
