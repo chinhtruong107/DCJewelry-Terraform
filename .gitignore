@@ -1,0 +1,35 @@
+# Terraform generated files
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Terraform variable files may contain credentials
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+
+# Sensitive local files
+.env
+.env.*
+*.pem
+*.key
+keypair/key
+
+# Terraform override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local plans and logs
+*.tfplan
+*.plan
+*.log
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
