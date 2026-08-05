@@ -39,7 +39,7 @@ module "compute" {
 
 module "database" {
   source                     = "./modules/database"
-  subnet_ids                 = [module.networking.private_subnet_ids[1], module.networking.private_subnet_ids[2]]
+  subnet_ids                 = [module.networking.private_subnet_ids[0], module.networking.private_subnet_ids[1]]
   database_security_group_id = module.security.database_security_group_id
   db_identifier              = var.db_identifier
   db_name                    = var.db_name

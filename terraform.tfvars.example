@@ -4,7 +4,7 @@ availability_zone_1 = "ap-southeast-1a"
 availability_zone_2 = "ap-southeast-1b"
 cidr_block          = "10.0.0.0/16"
 public_subnet_ips   = ["10.0.1.0/24", "10.0.2.0/24"]
-private_subnet_ips  = ["10.0.10.0/24", "10.0.20.0/24", "10.0.30.0/24"]
+private_subnet_ips  = ["10.0.10.0/24", "10.0.20.0/24"]
 
 # EC2
 keypair_path        = "./keypair/key.pub"
@@ -20,7 +20,7 @@ db_username          = "admin"
 # Set this only in your local terraform.tfvars. Never commit a real password.
 db_password          = "REPLACE_WITH_YOUR_RDS_PASSWORD"
 db_engine_version    = "8.0"
-db_instance_class    = "db.t3.micro"
+db_instance_class    = "db.t3.medium"
 db_allocated_storage = 20
 db_storage_type      = "gp3"
 db_multi_az          = false
