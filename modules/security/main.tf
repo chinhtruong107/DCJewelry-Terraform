@@ -73,6 +73,13 @@ resource "aws_security_group" "private_security_group" {
     security_groups = [aws_security_group.public_security_group.id]
   }
 
+  ingress {
+    from_port       = 8002
+    to_port         = 8002
+    protocol        = "tcp"
+    security_groups = [aws_security_group.public_security_group.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
