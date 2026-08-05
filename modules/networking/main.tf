@@ -1,9 +1,5 @@
-provider "aws" {
-  region = var.region
-}
-
 resource "aws_vpc" "dcjewelry_vpc" {
-  cidr_block           = var.cidr_block
+  cidr_block           = var.config.cidr_block
   enable_dns_hostnames = true
   tags = {
     Name = "DCJewelry VPC"
@@ -16,8 +12,8 @@ resource "aws_internet_gateway" "dcjewelry_igw" {
 
 resource "aws_subnet" "public_subnet_1" {
   vpc_id            = aws_vpc.dcjewelry_vpc.id
-  cidr_block        = var.public_subnet_ips[0]
-  availability_zone = var.availability_zone_1
+  cidr_block        = var.config.public_subnet_ips[0]
+  availability_zone = var.config.availability_zones[0]
   tags = {
     Name = "DCJewelry Public Subnet 1"
   }
@@ -25,8 +21,8 @@ resource "aws_subnet" "public_subnet_1" {
 
 resource "aws_subnet" "public_subnet_2" {
   vpc_id            = aws_vpc.dcjewelry_vpc.id
-  cidr_block        = var.public_subnet_ips[1]
-  availability_zone = var.availability_zone_2
+  cidr_block        = var.config.public_subnet_ips[1]
+  availability_zone = var.config.availability_zones[1]
   tags = {
     Name = "DCJewelry Public Subnet 2"
   }
@@ -34,8 +30,8 @@ resource "aws_subnet" "public_subnet_2" {
 
 resource "aws_subnet" "private_subnet_1" {
   vpc_id            = aws_vpc.dcjewelry_vpc.id
-  cidr_block        = var.private_subnet_ips[0]
-  availability_zone = var.availability_zone_1
+  cidr_block        = var.config.private_subnet_ips[0]
+  availability_zone = var.config.availability_zones[0]
   tags = {
     Name = "DCJewelry Private Subnet 1"
   }
@@ -43,8 +39,8 @@ resource "aws_subnet" "private_subnet_1" {
 
 resource "aws_subnet" "private_subnet_2" {
   vpc_id            = aws_vpc.dcjewelry_vpc.id
-  cidr_block        = var.private_subnet_ips[1]
-  availability_zone = var.availability_zone_2
+  cidr_block        = var.config.private_subnet_ips[1]
+  availability_zone = var.config.availability_zones[1]
   tags = {
     Name = "DCJewelry Private Subnet 2"
   }

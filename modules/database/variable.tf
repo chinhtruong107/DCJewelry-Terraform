@@ -6,40 +6,18 @@ variable "database_security_group_id" {
   type = string
 }
 
-variable "db_identifier" {
-  type = string
-}
-
-variable "db_name" {
-  type = string
-}
-
-variable "db_username" {
-  type      = string
+variable "config" {
+  description = "RDS configuration."
+  type = object({
+    identifier        = string
+    name              = string
+    username          = string
+    password          = string
+    engine_version    = string
+    instance_class    = string
+    allocated_storage = number
+    storage_type      = string
+    multi_az          = bool
+  })
   sensitive = true
-}
-
-variable "db_password" {
-  type      = string
-  sensitive = true
-}
-
-variable "db_engine_version" {
-  type = string
-}
-
-variable "db_instance_class" {
-  type = string
-}
-
-variable "db_allocated_storage" {
-  type = number
-}
-
-variable "db_storage_type" {
-  type = string
-}
-
-variable "db_multi_az" {
-  type = bool
 }

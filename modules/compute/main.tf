@@ -1,7 +1,7 @@
 resource "aws_instance" "Frontend-instance" {
-  ami                    = var.image_id
-  instance_type          = var.instance_type
-  key_name               = var.key_name
+  ami                    = var.config.image_id
+  instance_type          = var.config.instance_type
+  key_name               = var.config.key_name
   vpc_security_group_ids = var.security_group_public
   subnet_id              = var.subnet_id_frontend
   tags = {
@@ -10,9 +10,9 @@ resource "aws_instance" "Frontend-instance" {
 }
 
 resource "aws_instance" "Backend-instance" {
-  ami                    = var.image_id
-  instance_type          = var.instance_type
-  key_name               = var.key_name
+  ami                    = var.config.image_id
+  instance_type          = var.config.instance_type
+  key_name               = var.config.key_name
   vpc_security_group_ids = var.security_group_private
   subnet_id              = var.subnet_id_backend
   tags = {
@@ -21,9 +21,9 @@ resource "aws_instance" "Backend-instance" {
 }
 
 resource "aws_instance" "Control-node" {
-  ami                    = var.image_id
-  instance_type          = var.instance_type
-  key_name               = var.key_name
+  ami                    = var.config.image_id
+  instance_type          = var.config.instance_type
+  key_name               = var.config.key_name
   vpc_security_group_ids = var.security_group_control
   subnet_id              = var.subnet_id_control
   tags = {

@@ -1,21 +1,11 @@
-variable "region" {
-  type    = string
-  default = "ap-southeast-1"
-}
-
-variable "image_id" {
-  type        = string
-  description = "The id of the machine image (AMI) to use for the server."
-}
-variable "key_name" {
-  type        = string
-  description = "name of the keypair to use for the instance"
-  nullable    = false
-}
-variable "instance_type" {
-  type        = string
-  description = "Type of EC2 instance to launch. Example: t2.micro"
-  default     = "t3.micro"
+variable "config" {
+  description = "EC2 configuration."
+  type = object({
+    image_id      = string
+    instance_type = string
+    key_name      = string
+    keypair_path  = string
+  })
 }
 
 variable "subnet_id_frontend" {

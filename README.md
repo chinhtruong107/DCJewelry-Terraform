@@ -113,7 +113,7 @@ Set a real RDS password in `db_password`. Keep `terraform.tfvars` local; it is i
 
 Edit `backend.hcl` with the name of the existing S3 bucket used for remote Terraform state. Keep it local too; it is ignored by Git.
 
-RDS sizing and storage settings are editable through `db_instance_class`, `db_allocated_storage`, `db_storage_type`, `db_engine_version`, and `db_multi_az`.
+Configuration is grouped by responsibility in `terraform.tfvars`: `networking`, `security`, `compute`, and `database`. For example, RDS sizing and storage settings are under `database.instance_class`, `database.allocated_storage`, `database.storage_type`, `database.engine_version`, and `database.multi_az`.
 
 ## Deploy
 
