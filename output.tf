@@ -9,3 +9,15 @@ output "instance_ip_addr_private" {
 output "control_node_public_ip" {
   value = module.compute.control_node_public_ip
 }
+
+output "backend_private_ip" {
+  value = module.compute.backend_private_ip
+}
+
+output "pmm_private_ip" {
+  value = module.monitoring.private_ip
+}
+
+output "rds_endpoint" {
+  value = module.database.endpoint
+}

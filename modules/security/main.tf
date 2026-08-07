@@ -96,6 +96,59 @@ resource "aws_security_group" "database_security_group" {
     security_groups = [aws_security_group.private_security_group.id]
   }
 
+  ingress {
+    description     = "MySQL monitoring from the private PMM bastion only"
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.monitoring_security_group.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "monitoring_security_group" {
+  name        = "monitoring_security_group"
+  description = "Private PMM Server access from Control Node and Backend only"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description     = "PMM administration from Control Node only"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.control_security_group.id]
+  }
+
+  ingress {
+    description     = "PMM administration from Control Node only"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.control_security_group.id]
+  }
+
+  ingress {
+    description     = "PMM UI SSH tunnel from Control Node"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.control_security_group.id]
+  }
+
+  ingress {
+    description     = "PMM Client metrics from Backend"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.private_security_group.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

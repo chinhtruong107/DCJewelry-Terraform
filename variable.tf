@@ -44,3 +44,14 @@ variable "database" {
   })
   sensitive = true
 }
+
+
+variable "monitoring" {
+  description = "PMM Server configuration. The server is private and is reached through the Control Node SSH tunnel."
+  type = object({
+    image_id      = string
+    instance_type = string
+    key_name      = string
+    volume_size   = number
+  })
+}

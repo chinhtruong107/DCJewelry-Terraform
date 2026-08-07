@@ -29,6 +29,8 @@ AWS Region: ap-southeast-1
     |   `-- Reserved for a future Load Balancer or public HA resources
     |
     +-- Private subnet 1: 10.0.10.0/24 (AZ 1)
+    |   +-- PMM Server EC2
+    |   |   `-- Receives HTTPS :443 from Control Node and Backend only
     |   `-- RDS DB Subnet Group
     |
     `-- Private subnet 2: 10.0.20.0/24 (AZ 2)
@@ -39,6 +41,7 @@ AWS Region: ap-southeast-1
         `-- RDS DB Subnet Group
             `-- MySQL RDS (private and storage-encrypted)
                 `-- Receives MySQL :3306 from Backend only
+
 ```
 
 ### Traffic flows
@@ -50,6 +53,10 @@ Internet user -> Frontend Elastic IP :80/:443 -> Frontend EC2
 
 Administrator or GitHub Actions -> Control Node Elastic IP :22
                                  -> SSH / Ansible -> Frontend and Backend
+
+Administrator workstation -> SSH tunnel -> Control Node -> PMM Server :443
+Backend PMM Client -> PMM Server :443
+Backend PMM Client -> MySQL RDS :3306
 ```
 
 | Subnet | CIDR | Availability Zone | Current resources |
@@ -69,6 +76,7 @@ The configuration creates:
 - A backend EC2 instance in a private subnet
 - A Control Node EC2 with an Elastic IP for SSH, Ansible, and CD access
 - A private, encrypted MySQL RDS instance
+- A private PMM Server for MySQL and host monitoring, with persistent Docker storage
 - Security groups that limit Frontend -> Backend -> RDS traffic
 - An EC2 key pair from `keypair/key.pub`
 
@@ -88,6 +96,7 @@ The configuration creates:
     |-- security/
     |-- compute/
     `-- database/
+    `-- monitoring/
 ```
 
 ## Requirements
@@ -142,6 +151,94 @@ terraform output
 ```
 
 The RDS instance is private and should be accessed only by the backend through its RDS endpoint.
+
+## PMM monitoring
+
+PMM Server is deliberately private. It has no public IP; SSH administration is permitted only from Control Node, and HTTPS is permitted only from Control Node (for the SSH tunnel) and Backend (for PMM Client metrics). RDS remains reachable on port 3306 only from the Backend security group.
+
+### 1. Deploy the monitoring infrastructure
+
+The `monitoring` section in `terraform.tfvars` defaults to a `t3.medium` instance with a 30 GiB encrypted root disk. This is a practical PMM lab baseline; it stores its data in a Docker volume and retains data for 14 days.
+
+```powershell
+terraform fmt -recursive
+terraform validate
+terraform plan -out=tfplan --var-file "terraform.tfvars"
+terraform apply tfplan
+```
+
+Retrieve the addresses needed below:
+
+```powershell
+terraform output control_node_public_ip
+terraform output backend_private_ip
+terraform output pmm_private_ip
+terraform output rds_endpoint
+```
+
+### 2. Open the PMM UI securely through Control Node
+
+Run this command from your Windows workstation and keep the terminal open. Replace the key path if yours differs.
+
+```powershell
+$controlNode = terraform output -raw control_node_public_ip
+$pmmPrivateIp = terraform output -raw pmm_private_ip
+ssh -i .\keypair\key -N -L "8443:${pmmPrivateIp}:443" "ubuntu@$controlNode"
+```
+
+Open `https://localhost:8443`. PMM uses a self-signed certificate initially, so the browser warning is expected. Sign in as `admin` / `admin`, then change that password immediately. No PMM dashboard port is exposed to the Internet.
+
+### 3. Install and register PMM Client on Backend
+
+Connect through Control Node (the key must be the same key pair Terraform supplied):
+
+```powershell
+$controlNode = terraform output -raw control_node_public_ip
+$backendPrivateIp = terraform output -raw backend_private_ip
+ssh -i .\keypair\key -J "ubuntu@$controlNode" "ubuntu@$backendPrivateIp"
+```
+
+On Backend EC2, install PMM Client for Ubuntu/Debian:
+
+```bash
+wget https://repo.percona.com/apt/percona-release_latest.generic_all.deb
+sudo dpkg -i percona-release_latest.generic_all.deb
+sudo percona-release enable pmm3-client
+sudo apt update
+sudo apt install -y pmm-client
+```
+
+In the PMM UI, create a service-account token at **Users and access → Service accounts**. On Backend, register the PMM Client (use the PMM private IP, not a public address):
+
+```bash
+sudo pmm-admin config --server-insecure-tls \
+  --server-url=https://service_token:REPLACE_WITH_GLSA_TOKEN@PMM_PRIVATE_IP:443 \
+  BACKEND_PRIVATE_IP generic dcjewelry-backend
+```
+
+Create a dedicated database account using an RDS master/admin connection. Choose and store a strong password outside Git:
+
+```sql
+CREATE USER 'pmm'@'%' IDENTIFIED BY 'REPLACE_WITH_A_STRONG_PASSWORD';
+GRANT SELECT, PROCESS, REPLICATION CLIENT, RELOAD ON *.* TO 'pmm'@'%';
+FLUSH PRIVILEGES;
+```
+
+Then, still on Backend, add RDS MySQL. Replace all placeholders with Terraform outputs and the PMM database password:
+
+```bash
+sudo pmm-admin add mysql \
+  --username=pmm \
+  --password='REPLACE_WITH_PMM_DB_PASSWORD' \
+  --host=RDS_ENDPOINT \
+  --port=3306 \
+  --service-name=dcjewelry-rds \
+  --query-source=perfschema
+
+sudo pmm-admin status
+```
+
+For a production RDS connection, use the Amazon RDS CA bundle and add `--tls --tls-ca=/path/to/rds-ca-bundle.pem`; `--server-insecure-tls` is only for the PMM Server's initial self-signed certificate in this lab.
 
 ## Security notes
 

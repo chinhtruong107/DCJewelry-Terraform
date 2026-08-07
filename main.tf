@@ -36,3 +36,12 @@ module "database" {
   subnet_ids                 = [module.networking.private_subnet_ids[0], module.networking.private_subnet_ids[1]]
   database_security_group_id = module.security.database_security_group_id
 }
+
+
+module "monitoring" {
+  source             = "./modules/monitoring"
+  config             = merge(var.monitoring, { key_name = aws_key_pair.dcjewelry_keypair.key_name })
+  subnet_id          = module.networking.private_subnet_ids[0]
+  security_group_ids = [module.security.monitoring_security_group_id]
+  depends_on         = [module.networking]
+}

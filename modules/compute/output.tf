@@ -9,3 +9,7 @@ output "instance_ip_addr_private" {
 output "control_node_public_ip" {
   value = aws_eip.control-node-eip.public_ip
 }
+
+output "backend_private_ip" {
+  value = aws_instance.Backend-instance.private_ip
+}
