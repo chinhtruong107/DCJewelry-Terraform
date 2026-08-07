@@ -36,7 +36,7 @@ AWS Region: ap-southeast-1
     `-- Private subnet 2: 10.0.20.0/24 (AZ 2)
         |
         +-- Backend EC2
-        |   `-- Receives HTTP :80 from Frontend only
+        |   `-- Receives application HTTP :8002 from Frontend only
         |
         `-- RDS DB Subnet Group
             `-- MySQL RDS (private and storage-encrypted)
@@ -48,22 +48,21 @@ AWS Region: ap-southeast-1
 
 ```text
 Internet user -> Frontend Elastic IP :80/:443 -> Frontend EC2
-                                             -> Backend EC2 private IP :80
+                                             -> Backend EC2 private IP :8002
                                              -> MySQL RDS :3306
 
 Administrator or GitHub Actions -> Control Node Elastic IP :22
-                                 -> SSH / Ansible -> Frontend and Backend
+                                 -> SSH / Ansible -> Frontend, Backend and PMM Server
 
 Administrator workstation -> SSH tunnel -> Control Node -> PMM Server :443
-Backend PMM Client -> PMM Server :443
-Backend PMM Client -> MySQL RDS :3306
+PMM Client on PMM Server -> MySQL RDS :3306
 ```
 
 | Subnet | CIDR | Availability Zone | Current resources |
 | --- | --- | --- | --- |
 | Public subnet 1 | `10.0.1.0/24` | AZ 1 | NAT Gateway, Frontend EC2, Control Node EC2 |
 | Public subnet 2 | `10.0.2.0/24` | AZ 2 | Reserved for future ALB/HA use |
-| Private subnet 1 | `10.0.10.0/24` | AZ 1 | RDS DB subnet group |
+| Private subnet 1 | `10.0.10.0/24` | AZ 1 | PMM Server, RDS DB subnet group |
 | Private subnet 2 | `10.0.20.0/24` | AZ 2 | Backend EC2, RDS DB subnet group |
 
 RDS uses both private subnets because an RDS DB subnet group must span at least two Availability Zones. With `db_multi_az = false`, only one database instance runs, but AWS still needs the two-subnet group.
@@ -122,7 +121,7 @@ Set a real RDS password in `db_password`. Keep `terraform.tfvars` local; it is i
 
 Edit `backend.hcl` with the name of the existing S3 bucket used for remote Terraform state. Keep it local too; it is ignored by Git.
 
-Configuration is grouped by responsibility in `terraform.tfvars`: `networking`, `security`, `compute`, and `database`. For example, RDS sizing and storage settings are under `database.instance_class`, `database.allocated_storage`, `database.storage_type`, `database.engine_version`, and `database.multi_az`.
+Configuration is grouped by responsibility in `terraform.tfvars`: `networking`, `security`, `compute`, `database`, and `monitoring`. For example, RDS sizing and storage settings are under `database.instance_class`, `database.allocated_storage`, `database.storage_type`, `database.engine_version`, and `database.multi_az`.
 
 ## Deploy
 
@@ -154,7 +153,15 @@ The RDS instance is private and should be accessed only by the backend through i
 
 ## PMM monitoring
 
-PMM Server is deliberately private. It has no public IP; SSH administration is permitted only from Control Node, and HTTPS is permitted only from Control Node (for the SSH tunnel) and Backend (for PMM Client metrics). RDS remains reachable on port 3306 only from the Backend security group.
+PMM Server is deliberately private in `10.0.10.0/24`. It has no public IP; SSH administration is permitted only from Control Node, and HTTPS is permitted only from Control Node for the SSH tunnel. The PMM Client runs on this PMM bastion and connects privately to RDS on port `3306`.
+
+### Query Analytics evidence
+
+The screenshot below shows PMM Query Analytics collecting query digests from the private DCJewelry RDS instance.
+
+![PMM Query Analytics showing DCJewelry application queries](images/image1.png)
+
+The PMM service is named `dcjewelry-rds`; use the `dcjewelry` schema filter and a recent time range in **Query Analytics → Stored metrics** to focus on application traffic.
 
 ### 1. Deploy the monitoring infrastructure
 
@@ -188,17 +195,16 @@ ssh -i .\keypair\key -N -L "8443:${pmmPrivateIp}:443" "ubuntu@$controlNode"
 
 Open `https://localhost:8443`. PMM uses a self-signed certificate initially, so the browser warning is expected. Sign in as `admin` / `admin`, then change that password immediately. No PMM dashboard port is exposed to the Internet.
 
-### 3. Install and register PMM Client on Backend
+### 3. Install and register PMM Client on the PMM bastion
 
-Connect through Control Node (the key must be the same key pair Terraform supplied):
+First connect to the Control Node from the workstation. Then, from the Control Node, connect to the PMM private IP with the Terraform private key:
 
 ```powershell
 $controlNode = terraform output -raw control_node_public_ip
-$backendPrivateIp = terraform output -raw backend_private_ip
-ssh -i .\keypair\key -J "ubuntu@$controlNode" "ubuntu@$backendPrivateIp"
+ssh -i /home/ubuntu/.ssh/key ubuntu@PMM_PRIVATE_IP
 ```
 
-On Backend EC2, install PMM Client for Ubuntu/Debian:
+On the PMM bastion, install PMM Client for Ubuntu/Debian:
 
 ```bash
 wget https://repo.percona.com/apt/percona-release_latest.generic_all.deb
@@ -213,7 +219,7 @@ In the PMM UI, create a service-account token at **Users and access → Service 
 ```bash
 sudo pmm-admin config --server-insecure-tls \
   --server-url=https://service_token:REPLACE_WITH_GLSA_TOKEN@PMM_PRIVATE_IP:443 \
-  BACKEND_PRIVATE_IP generic dcjewelry-backend
+  PMM_PRIVATE_IP generic dcjewelry-pmm-bastion
 ```
 
 Create a dedicated database account using an RDS master/admin connection. Choose and store a strong password outside Git:
@@ -224,7 +230,7 @@ GRANT SELECT, PROCESS, REPLICATION CLIENT, RELOAD ON *.* TO 'pmm'@'%';
 FLUSH PRIVILEGES;
 ```
 
-Then, still on Backend, add RDS MySQL. Replace all placeholders with Terraform outputs and the PMM database password:
+Then, still on the PMM bastion, add RDS MySQL. Replace all placeholders with Terraform outputs and the PMM database password:
 
 ```bash
 sudo pmm-admin add mysql \
@@ -238,14 +244,26 @@ sudo pmm-admin add mysql \
 sudo pmm-admin status
 ```
 
+### 4. Enable Query Analytics for RDS MySQL
+
+The Terraform database parameter group enables `performance_schema=1`. RDS must be rebooted once after applying this pending-reboot setting. Then enable statement history with an RDS admin connection:
+
+```sql
+UPDATE performance_schema.setup_consumers
+SET ENABLED = 'YES'
+WHERE NAME = 'events_statements_history_long';
+```
+
+The DCJewelry Laravel backend uses PDO emulated prepares so RDS exposes application SQL text to PMM. Re-check the consumer after an RDS reboot because this runtime setting can reset.
+
 For a production RDS connection, use the Amazon RDS CA bundle and add `--tls --tls-ca=/path/to/rds-ca-bundle.pem`; `--server-insecure-tls` is only for the PMM Server's initial self-signed certificate in this lab.
 
 ## Security notes
 
 - Keep `keypair/key` and all database passwords private.
 - `terraform.tfvars`, `backend.hcl`, and Terraform plan files are ignored by Git. Do not force-add them.
-- SSH is permitted only from `control_node_cidr` to the Control Node, then from the Control Node to Frontend and Backend.
-- RDS port 3306 is restricted to the backend private security group.
+- SSH is permitted only from `control_node_cidr` to the Control Node, then from the Control Node to Frontend, Backend, and PMM Server.
+- RDS port 3306 is restricted to the Backend and PMM security groups.
 - Use the encrypted S3 remote backend and state locking for all shared environments.
 - The current NAT Gateway is in AZ 1 only. This is acceptable for a lab, but production should use one NAT Gateway per AZ.
 - `skip_final_snapshot = true` is suitable for a lab only; change it before production so RDS has a final snapshot on deletion.

@@ -13,6 +13,7 @@ resource "aws_db_parameter_group" "monitoring" {
     value        = "1"
     apply_method = "pending-reboot"
   }
+
 }
 
 resource "aws_db_instance" "database" {
