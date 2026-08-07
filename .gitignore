@@ -26,6 +26,7 @@ override.tf.json
 *_override.tf.json
 
 # Local plans and logs
+tfplan
 *.tfplan
 *.plan
 *.log
