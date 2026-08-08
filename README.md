@@ -156,6 +156,16 @@ terraform plan -out=tfplan --var-file "terraform.tfvars"
 terraform apply tfplan
 ```
 
+## Pull request CI
+
+Every pull request that changes Terraform files automatically runs:
+
+1. `terraform fmt -check -recursive`
+2. `terraform init -backend=false -input=false`
+3. `terraform validate -no-color`
+
+The workflow deliberately does not use AWS credentials, remote state, secrets, or `terraform apply`. Run a state-aware `terraform plan` only from a trusted environment after reviewing the pull request.
+
 To remove the infrastructure:
 
 ```powershell
