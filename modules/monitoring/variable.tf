@@ -17,3 +17,8 @@ variable "security_group_ids" {
   type        = list(string)
   description = "Security groups attached to the PMM Server."
 }
+
+variable "iam_instance_profile" {
+  type        = string
+  description = "Instance profile that permits the CloudWatch Agent to publish metrics and logs."
+}

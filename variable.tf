@@ -55,3 +55,18 @@ variable "monitoring" {
     volume_size   = number
   })
 }
+
+variable "observability" {
+  description = "CloudWatch Agent logs/metrics and the SNS destination for future alarms."
+  type = object({
+    alert_topic_name         = optional(string, "dcjewelry-infrastructure-alerts")
+    log_retention_days       = optional(number, 30)
+    telegram_bot_token       = optional(string)
+    telegram_chat_id         = optional(string)
+    cpu_threshold_percent    = optional(number, 80)
+    memory_threshold_percent = optional(number, 85)
+    disk_threshold_percent   = optional(number, 85)
+    rds_free_storage_gib     = optional(number, 5)
+  })
+  default = {}
+}

@@ -40,3 +40,14 @@ monitoring = {
   key_name      = "dcjewelry-keypair"
   volume_size   = 30
 }
+
+observability = {
+  alert_topic_name   = "dcjewelry-infrastructure-alerts"
+  log_retention_days = 30
+  cpu_threshold_percent    = 80
+  memory_threshold_percent = 85
+  disk_threshold_percent   = 85
+  rds_free_storage_gib     = 5
+  telegram_bot_token = "PASTE_YOUR_TELEGRAM_BOT_TOKEN"
+  telegram_chat_id   = "PASTE_YOUR_TELEGRAM_CHAT_ID"
+}

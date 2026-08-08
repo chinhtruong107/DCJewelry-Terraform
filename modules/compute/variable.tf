@@ -40,3 +40,8 @@ variable "security_group_control" {
   type     = list(string)
   nullable = false
 }
+
+variable "iam_instance_profile" {
+  type        = string
+  description = "Instance profile that permits the CloudWatch Agent to publish metrics and logs."
+}

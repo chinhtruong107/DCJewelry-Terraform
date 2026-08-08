@@ -1,6 +1,14 @@
 # DCJewelry AWS Infrastructure
 
-Terraform configuration for deploying the DCJewelry application infrastructure on AWS.
+Production-style AWS infrastructure for the **DCJewelry** e-commerce application, provisioned with Terraform. It separates public and private workloads, keeps MySQL RDS private, and combines PMM database monitoring with CloudWatch-to-Telegram incident alerts.
+
+## Highlights
+
+- Segmented VPC with public Frontend/Control Node and private Backend, PMM, and RDS resources.
+- Encrypted private MySQL RDS with PMM Query Analytics.
+- CloudWatch Agent metrics and logs for all EC2 hosts.
+- Alarms for EC2 CPU/RAM/disk and RDS CPU/free storage.
+- SNS and Lambda delivery of `ALARM` and `OK` state changes to Telegram.
 
 ## Architecture
 
@@ -56,6 +64,9 @@ Administrator or GitHub Actions -> Control Node Elastic IP :22
 
 Administrator workstation -> SSH tunnel -> Control Node -> PMM Server :443
 PMM Client on PMM Server -> MySQL RDS :3306
+
+CloudWatch Agent -> CloudWatch Metrics and Logs -> CloudWatch Alarm
+                                                    -> SNS -> Lambda -> Telegram
 ```
 
 | Subnet | CIDR | Availability Zone | Current resources |
@@ -76,6 +87,9 @@ The configuration creates:
 - A Control Node EC2 with an Elastic IP for SSH, Ansible, and CD access
 - A private, encrypted MySQL RDS instance
 - A private PMM Server for MySQL and host monitoring, with persistent Docker storage
+- CloudWatch Agent on all EC2 instances for memory, root-disk, and host logs
+- CloudWatch alarms for EC2 CPU/RAM/disk and RDS CPU/free storage
+- An SNS topic and Lambda that forward alarm state changes to Telegram
 - Security groups that limit Frontend -> Backend -> RDS traffic
 - An EC2 key pair from `keypair/key.pub`
 
@@ -94,8 +108,9 @@ The configuration creates:
     |-- networking/
     |-- security/
     |-- compute/
-    `-- database/
-    `-- monitoring/
+    |-- database/
+    |-- monitoring/
+    `-- observability/
 ```
 
 ## Requirements
@@ -117,11 +132,19 @@ Copy-Item backend.hcl.example backend.hcl
 
 Edit `terraform.tfvars` before deployment. `control_node_cidr` controls SSH access to the Control Node. For an administrator workstation, use one public IP with a `/32` suffix, for example `203.0.113.10/32`. Direct SSH from GitHub-hosted Actions may require a wider CIDR because runner IPs change; use SSH keys only and disable password login in that case.
 
-Set a real RDS password in `db_password`. Keep `terraform.tfvars` local; it is ignored by Git.
+Set a real RDS password in `database.password`. Keep `terraform.tfvars` local; it is ignored by Git.
 
 Edit `backend.hcl` with the name of the existing S3 bucket used for remote Terraform state. Keep it local too; it is ignored by Git.
 
-Configuration is grouped by responsibility in `terraform.tfvars`: `networking`, `security`, `compute`, `database`, and `monitoring`. For example, RDS sizing and storage settings are under `database.instance_class`, `database.allocated_storage`, `database.storage_type`, `database.engine_version`, and `database.multi_az`.
+Configuration is grouped by responsibility in `terraform.tfvars`: `networking`, `security`, `compute`, `database`, `monitoring`, and `observability`. RDS sizing is controlled under `database`, while alert thresholds and Telegram delivery are controlled under `observability`.
+
+### Telegram alert delivery
+
+Set `observability.telegram_bot_token` and `observability.telegram_chat_id` in the ignored `terraform.tfvars` file. When both values are present, Terraform creates a Lambda subscription that forwards every message received by `dcjewelry-infrastructure-alerts` to that Telegram chat. The Lambda remains outside the VPC so it can reach the Telegram Bot API.
+
+Do not commit the bot token. It is marked sensitive in Terraform output, but Terraform state still contains the Lambda environment variable; protect the remote state bucket and restrict its access.
+
+Terraform creates alarms for CPU, memory, and root-disk usage on Frontend, Backend, Control Node, and PMM, plus RDS CPU and free storage. Default thresholds are 80% CPU, 85% memory/disk, and 5 GiB free RDS storage; adjust them under `observability` in `terraform.tfvars`. Each alarm state change is forwarded as a readable Telegram notification.
 
 ## Deploy
 
@@ -151,6 +174,36 @@ terraform output
 
 The RDS instance is private and should be accessed only by the backend through its RDS endpoint.
 
+## Test alert delivery
+
+After `terraform apply`, confirm that Telegram forwarding was created:
+
+```powershell
+terraform output telegram_alerts_enabled
+```
+
+Publish a harmless SNS test message:
+
+```powershell
+$topicArn = terraform output -raw sns_alert_topic_arn
+aws sns publish `
+  --topic-arn $topicArn `
+  --subject "DCJewelry test alert" `
+  --message "Test: SNS -> Lambda -> Telegram is working."
+```
+
+To test the complete alarm path without generating load, temporarily set a CloudWatch alarm state:
+
+```powershell
+aws cloudwatch set-alarm-state `
+  --alarm-name dcjewelry-frontend-cpu-high `
+  --state-value ALARM `
+  --state-reason "Manual Telegram delivery test. No infrastructure fault." `
+  --region ap-southeast-1
+```
+
+CloudWatch returns the alarm to its real state after the next metric evaluation.
+
 ## PMM monitoring
 
 PMM Server is deliberately private in `10.0.10.0/24`. It has no public IP; SSH administration is permitted only from Control Node, and HTTPS is permitted only from Control Node for the SSH tunnel. The PMM Client runs on this PMM bastion and connects privately to RDS on port `3306`.
@@ -162,6 +215,12 @@ The screenshot below shows PMM Query Analytics collecting query digests from the
 ![PMM Query Analytics showing DCJewelry application queries](images/image1.png)
 
 The PMM service is named `dcjewelry-rds`; use the `dcjewelry` schema filter and a recent time range in **Query Analytics → Stored metrics** to focus on application traffic.
+
+### CloudWatch to Telegram evidence
+
+`image2` captures the final alert path: CloudWatch state changes are published to SNS, processed by Lambda, and delivered to Telegram in a readable format. The `ALARM` message shown is a manual delivery test; the following `OK` message confirms that CloudWatch returned to the real metric state.
+
+![Telegram receives formatted DCJewelry ALARM and OK notifications](images/image2.png)
 
 ### 1. Deploy the monitoring infrastructure
 

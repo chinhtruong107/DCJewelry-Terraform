@@ -4,6 +4,8 @@ resource "aws_instance" "Frontend-instance" {
   key_name               = var.config.key_name
   vpc_security_group_ids = var.security_group_public
   subnet_id              = var.subnet_id_frontend
+  iam_instance_profile   = var.iam_instance_profile
+  user_data              = file("${path.module}/cloudwatch_agent.sh")
   tags = {
     Name = "Frontend"
   }
@@ -15,6 +17,8 @@ resource "aws_instance" "Backend-instance" {
   key_name               = var.config.key_name
   vpc_security_group_ids = var.security_group_private
   subnet_id              = var.subnet_id_backend
+  iam_instance_profile   = var.iam_instance_profile
+  user_data              = file("${path.module}/cloudwatch_agent.sh")
   tags = {
     Name = "Backend"
   }
@@ -26,6 +30,8 @@ resource "aws_instance" "Control-node" {
   key_name               = var.config.key_name
   vpc_security_group_ids = var.security_group_control
   subnet_id              = var.subnet_id_control
+  iam_instance_profile   = var.iam_instance_profile
+  user_data              = file("${path.module}/cloudwatch_agent.sh")
   tags = {
     Name = "Control Node"
   }

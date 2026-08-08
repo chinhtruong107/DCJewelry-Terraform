@@ -21,3 +21,13 @@ output "pmm_private_ip" {
 output "rds_endpoint" {
   value = module.database.endpoint
 }
+
+output "sns_alert_topic_arn" {
+  value       = module.observability.alert_topic_arn
+  description = "SNS topic to use as the target of CloudWatch alarms."
+}
+
+output "telegram_alerts_enabled" {
+  value       = nonsensitive(module.observability.telegram_alerts_enabled)
+  description = "True when SNS alerts are forwarded to the configured Telegram chat."
+}

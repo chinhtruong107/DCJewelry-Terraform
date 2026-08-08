@@ -30,6 +30,7 @@ tfplan
 *.tfplan
 *.plan
 *.log
+modules/observability/*.zip
 
 # Terraform CLI credentials
 terraform.rc
