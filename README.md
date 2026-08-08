@@ -158,7 +158,7 @@ terraform apply tfplan
 
 ## Pull request CI
 
-Every pull request that changes Terraform files automatically runs:
+Every push to `main` and every pull request targeting `main` automatically run:
 
 1. `terraform fmt -check -recursive`
 2. `terraform init -backend=false -input=false`

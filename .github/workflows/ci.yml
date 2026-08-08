@@ -1,22 +1,21 @@
-name: Terraform PR Checks
+name: Terraform CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
-    paths:
-      - "**.tf"
-      - "**.tfvars.example"
-      - ".github/workflows/terraform-pr.yml"
+    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: terraform-pr-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   terraform:
-    name: Format and validate
+    name: Terraform - Format and Validate
     runs-on: ubuntu-latest
 
     steps:
