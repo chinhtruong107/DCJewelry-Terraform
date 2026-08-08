@@ -208,6 +208,12 @@ CloudWatch returns the alarm to its real state after the next metric evaluation.
 
 PMM Server is deliberately private in `10.0.10.0/24`. It has no public IP; SSH administration is permitted only from Control Node, and HTTPS is permitted only from Control Node for the SSH tunnel. The PMM Client runs on this PMM bastion and connects privately to RDS on port `3306`.
 
+### MySQL instance monitoring
+
+The PMM MySQL Instance Summary shows database uptime, query throughput, buffer-pool activity, and connection health for the private DCJewelry RDS service.
+
+![PMM MySQL instance summary for the DCJewelry RDS service](images/image.png)
+
 ### Query Analytics evidence
 
 The screenshot below shows PMM Query Analytics collecting query digests from the private DCJewelry RDS instance.
